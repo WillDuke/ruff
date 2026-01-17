@@ -149,8 +149,6 @@ class Location:
 class Diagnostic:
     check_name: str
     description: str
-    severity: str
-    fingerprint: str | None
     location: Location
     source: Source
     optional: bool
@@ -165,7 +163,7 @@ class Diagnostic:
         return (
             f"{self.location.path}:{self.location.positions.begin.line}:"
             f"{self.location.positions.begin.column}: "
-            f"{self.severity_for_display}[{self.check_name}] {self.description}"
+            f"error[{self.check_name}] {self.description}"
         )
 
     @classmethod
@@ -177,8 +175,6 @@ class Diagnostic:
         return cls(
             check_name=dct["check_name"],
             description=dct["description"],
-            severity=dct["severity"],
-            fingerprint=dct["fingerprint"],
             location=Location(
                 path=Path(dct["location"]["path"]).resolve(),
                 positions=Positions(
@@ -200,13 +196,6 @@ class Diagnostic:
     def key(self) -> str:
         """Key to group diagnostics by path and beginning line."""
         return f"{self.location.path.as_posix()}:{self.location.positions.begin.line}"
-
-    @property
-    def severity_for_display(self) -> str:
-        return {
-            "major": "error",
-            "minor": "warning",
-        }.get(self.severity, "unknown")
 
 
 @dataclass(kw_only=True, slots=True)
@@ -308,8 +297,6 @@ def collect_expected_diagnostics(path: Path) -> list[Diagnostic]:
                             or error.group("tag")
                             or "Missing"
                         ),
-                        severity="major",
-                        fingerprint=None,
                         location=Location(
                             path=file,
                             positions=Positions(
