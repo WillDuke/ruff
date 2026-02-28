@@ -369,6 +369,19 @@ class GroupedDiagnostics:
 
         return f"| {'<br>'.join(locs)} | {'<br>'.join(check_names)} | {'<br>'.join(descriptions)} |"
 
+    @property
+    def is_diagnostics_changed(self) -> bool:
+        """True if both old and new have diagnostics but the content differs."""
+        if Source.OLD not in self.sources or Source.NEW not in self.sources:
+            return False
+
+        def diagnostic_key(d: Diagnostic) -> tuple[str, str]:
+            return (d.check_name, d.description)
+
+        old_keys = sorted(diagnostic_key(d) for d in self.old)
+        new_keys = sorted(diagnostic_key(d) for d in self.new)
+        return old_keys != new_keys
+
     def _render_diff(self, diagnostics: list[Diagnostic], *, removed: bool = False):
         sign = "-" if removed else "+"
         return "\n".join(f"{sign} {diagnostic}" for diagnostic in diagnostics)
@@ -392,6 +405,27 @@ class GroupedDiagnostics:
                     if format == "diff"
                     else self._render_row(diagnostics)
                 )
+
+    def display_changed(self, format: Literal["diff", "github"]) -> str:
+        """Display a diff between old and new diagnostics for a line whose
+        true/false-positive status did not change but whose diagnostic content did."""
+        if format == "diff":
+            parts = []
+            if self.old:
+                parts.append(self._render_diff(self.old, removed=True))
+            if self.new:
+                parts.append(self._render_diff(self.new, removed=False))
+            return "\n".join(parts)
+        else:
+            loc_diag = self.old[0] if self.old else self.new[0]
+            loc = loc_diag.location.as_link()
+            old_part = "<br>".join(
+                f"`{d.check_name}`: {d.description}" for d in self.old
+            ) or "(none)"
+            new_part = "<br>".join(
+                f"`{d.check_name}`: {d.description}" for d in self.new
+            ) or "(none)"
+            return f"| {loc} | {old_part} | {new_part} |"
 
 
 @dataclass(kw_only=True, slots=True)
@@ -567,12 +601,59 @@ def compute_stats(
     return reduce(increment, grouped_diagnostics, Statistics())
 
 
+def detect_file_status_changes(
+    grouped_diagnostics: list[GroupedDiagnostics],
+) -> list[tuple[str, Literal["now passing", "no longer passing"]]]:
+    """Return (filename, status) for files that moved into or out of fully-passing state.
+
+    A file is "fully passing" when it has no false positives and no false negatives.
+    """
+
+    def get_file(group: GroupedDiagnostics) -> str:
+        for diag_list in [group.expected, group.old, group.new]:
+            if diag_list:
+                return diag_list[0].location.path.name
+        return ""
+
+    by_file: dict[str, list[GroupedDiagnostics]] = {}
+    for group in grouped_diagnostics:
+        filename = get_file(group)
+        if filename:
+            by_file.setdefault(filename, []).append(group)
+
+    result = []
+    for filename, groups in sorted(by_file.items()):
+        old_stats = compute_stats(groups, ty_version="old")
+        new_stats = compute_stats(groups, ty_version="new")
+
+        old_passing = old_stats.false_positives == 0 and old_stats.false_negatives == 0
+        new_passing = new_stats.false_positives == 0 and new_stats.false_negatives == 0
+
+        if old_passing != new_passing:
+            status: Literal["now passing", "no longer passing"] = (
+                "now passing" if new_passing else "no longer passing"
+            )
+            result.append((filename, status))
+
+    return result
+
+
 def render_grouped_diagnostics(
     grouped: list[GroupedDiagnostics],
     *,
     changed_only: bool = True,
     format: Literal["diff", "github"] = "diff",
 ) -> str:
+    # Collect diagnostics where both old and new are present but content differs.
+    # These are excluded from the classification-based sections and shown separately.
+    changed_diagnostics = sorted(
+        (diag for diag in grouped if diag.is_diagnostics_changed),
+        key=attrgetter("key"),
+    )
+
+    # Exclude changed diagnostics from the main added/removed classification sections
+    grouped = [diag for diag in grouped if not diag.is_diagnostics_changed]
+
     if changed_only:
         grouped = [
             diag for diag in grouped if diag.change in (Change.ADDED, Change.REMOVED)
@@ -621,6 +702,26 @@ def render_grouped_diagnostics(
             lines.append(diag.display(format=format))
 
         lines.append(footer)
+        lines.extend(["", "</details>", ""])
+
+    if changed_diagnostics:
+        lines.append("### Diagnostics Changed")
+        lines.extend(["", "<details>", ""])
+
+        match format:
+            case "diff":
+                lines.append("```diff")
+                for diag in changed_diagnostics:
+                    lines.append(diag.display_changed(format=format))
+                lines.append("```")
+            case "github":
+                lines.extend([
+                    "| Location | Old | New |",
+                    "|----------|-----|-----|",
+                ])
+                for diag in changed_diagnostics:
+                    lines.append(diag.display_changed(format=format))
+
         lines.extend(["", "</details>", ""])
 
     return "\n".join(lines)
@@ -684,9 +785,11 @@ def render_summary(
 
     base_header = f"[Typing conformance results]({CONFORMANCE_DIR_WITH_README})"
 
-    if not force_summary_table and all(
-        diag.change is Change.UNCHANGED for diag in grouped_diagnostics
-    ):
+    has_any_change = any(
+        diag.change in (Change.ADDED, Change.REMOVED) or diag.is_diagnostics_changed
+        for diag in grouped_diagnostics
+    )
+    if not force_summary_table and not has_any_change:
         return dedent(
             f"""
             ## {base_header}
@@ -720,6 +823,15 @@ def render_summary(
         f"{format_metric(recall_change, old.recall, new.recall)}."
     )
 
+    file_status_changes = detect_file_status_changes(grouped_diagnostics)
+    file_status_section = ""
+    if file_status_changes:
+        file_status_lines = ["", "### File Status Changes", ""]
+        for filename, status in file_status_changes:
+            icon = "✅" if status == "now passing" else "❌"
+            file_status_lines.append(f"- {icon} `{filename}` is {status}")
+        file_status_section = "\n".join(file_status_lines) + "\n"
+
     return dedent(
         f"""
         ## {header}
@@ -736,7 +848,7 @@ def render_summary(
         | Total Diagnostics | {old.total_diagnostics} | {new.total_diagnostics} | {total_change:+} | {total_diff} |
         | Precision | {old.precision:.2%} | {new.precision:.2%} | {precision_change:+.2%} | {precision_diff} |
         | Recall | {old.recall:.2%} | {new.recall:.2%} | {recall_change:+.2%} | {recall_diff} |
-
+        {file_status_section}
         """
     )
 
