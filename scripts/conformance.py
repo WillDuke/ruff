@@ -747,13 +747,14 @@ def render_file_stats_table(test_cases: list[TestCase]) -> str:
         diff = new - old
         improved = diff > 0 if greater_is_better else diff < 0
         indicator = " ✅" if improved else " ❌"
-        return f"{new} ({diff:+}){indicator}"
+        return f"{old}→{new} ({diff:+}){indicator}"
 
     # Collect per-file data; track totals across all files regardless of change.
     file_stats: list[FileStats] = []
     old_totals = Statistics()
     new_totals = Statistics()
-    passing = 0
+    old_passing = 0
+    new_passing = 0
     total_files = 0
 
     for path, cases in path_to_cases.items():
@@ -768,7 +769,8 @@ def render_file_stats_table(test_cases: list[TestCase]) -> str:
         new_totals.true_positives += fs.new.true_positives
         new_totals.false_positives += fs.new.false_positives
         new_totals.false_negatives += fs.new.false_negatives
-        passing += fs.new_passes
+        old_passing += fs.old_passes
+        new_passing += fs.new_passes
         total_files += 1
         file_stats.append(fs)
 
@@ -785,9 +787,16 @@ def render_file_stats_table(test_cases: list[TestCase]) -> str:
         elif fs.old_passes and not fs.new_passes:
             status = "❌ Regressed"
         elif fs.new_passes:
-            status = "✅"
+            status = "✅ Passing"
         else:
-            status = "❌"
+            old_errors = fs.old.false_positives + fs.old.false_negatives
+            new_errors = fs.new.false_positives + fs.new.false_negatives
+            if new_errors < old_errors:
+                status = "📈 Improving"
+            elif new_errors > old_errors:
+                status = "📉 Regressing"
+            else:
+                status = "❌ Failing"
         url = CONFORMANCE_DIR_WITH_README + f"tests/{fs.path.name}"
         rows.append(
             f"| [{fs.path.name}]({url})"
@@ -797,12 +806,19 @@ def render_file_stats_table(test_cases: list[TestCase]) -> str:
             f" | {status} |"
         )
 
+    passing_diff = new_passing - old_passing
+    if passing_diff == 0:
+        passing_display = f"{new_passing}/{total_files} passing"
+    else:
+        indicator = "✅" if passing_diff > 0 else "❌"
+        passing_display = f"{old_passing}→{new_passing}/{total_files} ({passing_diff:+}) {indicator}"
+
     totals_row = (
         f"| **Total**"
         f" | **{fmt(old_totals.true_positives, new_totals.true_positives, greater_is_better=True)}**"
         f" | **{fmt(old_totals.false_positives, new_totals.false_positives, greater_is_better=False)}**"
         f" | **{fmt(old_totals.false_negatives, new_totals.false_negatives, greater_is_better=False)}**"
-        f" | {passing}/{total_files} |"
+        f" | {passing_display} |"
     )
 
     lines = [
@@ -810,7 +826,7 @@ def render_file_stats_table(test_cases: list[TestCase]) -> str:
         "",
         '<div align="center">',
         "",
-        "| File | True Positives | False Positives | False Negatives | Status |",
+        "| File | True Positives ↑ | False Positives ↓ | False Negatives ↓ | Status |",
         "|------|----|----|----|--------|",
         *rows,
         totals_row,
