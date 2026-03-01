@@ -28,9 +28,9 @@ use crate::types::call::arguments::{Expansion, is_expandable_type};
 use crate::types::constraints::{ConstraintSet, ConstraintSetBuilder};
 use crate::types::diagnostic::{
     CALL_NON_CALLABLE, CALL_TOP_CALLABLE, CONFLICTING_ARGUMENT_FORMS, INVALID_ARGUMENT_TYPE,
-    INVALID_DATACLASS, MISSING_ARGUMENT, NO_MATCHING_OVERLOAD, PARAMETER_ALREADY_ASSIGNED,
-    POSITIONAL_ONLY_PARAMETER_AS_KWARG, TOO_MANY_POSITIONAL_ARGUMENTS, UNKNOWN_ARGUMENT,
-    note_numbers_module_not_supported,
+    INVALID_DATACLASS, INVALID_DATACLASS_ARG_VERSION, MISSING_ARGUMENT, NO_MATCHING_OVERLOAD,
+    PARAMETER_ALREADY_ASSIGNED, POSITIONAL_ONLY_PARAMETER_AS_KWARG, TOO_MANY_POSITIONAL_ARGUMENTS,
+    UNKNOWN_ARGUMENT, note_numbers_module_not_supported,
 };
 use crate::types::enums::is_enum_class;
 use crate::types::function::{
@@ -1507,38 +1507,60 @@ impl<'db> Bindings<'db> {
                                 if to_bool(frozen, false) {
                                     flags |= DataclassFlags::FROZEN;
                                 }
-                                if to_bool(match_args, true) {
-                                    if Program::get(db).python_version(db) >= PythonVersion::PY310 {
+                                let python_version = Program::get(db).python_version(db);
+
+                                // match_args, kw_only, slots require Python 3.10+; weakref_slot
+                                // requires Python 3.11+. We collect version errors in a separate
+                                // SmallVec to avoid a mutable borrow of `overload.errors` while
+                                // `parameter_types()` holds an immutable borrow of `overload`.
+                                let mut version_errors: SmallVec<[BindingError<'db>; 4]> =
+                                    SmallVec::new();
+
+                                if python_version >= PythonVersion::PY310 {
+                                    if to_bool(match_args, true) {
                                         flags |= DataclassFlags::MATCH_ARGS;
-                                    } else {
-                                        // TODO: emit diagnostic
                                     }
+                                } else if match_args.is_some() {
+                                    version_errors.push(BindingError::InvalidDataclassArgVersion {
+                                        arg_name: "match_args",
+                                        minimum_version: PythonVersion::PY310,
+                                    });
                                 }
-                                if to_bool(kw_only, false) {
-                                    if Program::get(db).python_version(db) >= PythonVersion::PY310 {
+                                if python_version >= PythonVersion::PY310 {
+                                    if to_bool(kw_only, false) {
                                         flags |= DataclassFlags::KW_ONLY;
-                                    } else {
-                                        // TODO: emit diagnostic
                                     }
+                                } else if kw_only.is_some() {
+                                    version_errors.push(BindingError::InvalidDataclassArgVersion {
+                                        arg_name: "kw_only",
+                                        minimum_version: PythonVersion::PY310,
+                                    });
                                 }
-                                if to_bool(slots, false) {
-                                    if Program::get(db).python_version(db) >= PythonVersion::PY310 {
+                                if python_version >= PythonVersion::PY310 {
+                                    if to_bool(slots, false) {
                                         flags |= DataclassFlags::SLOTS;
-                                    } else {
-                                        // TODO: emit diagnostic
                                     }
+                                } else if slots.is_some() {
+                                    version_errors.push(BindingError::InvalidDataclassArgVersion {
+                                        arg_name: "slots",
+                                        minimum_version: PythonVersion::PY310,
+                                    });
                                 }
-                                if to_bool(weakref_slot, false) {
-                                    if Program::get(db).python_version(db) >= PythonVersion::PY311 {
+                                if python_version >= PythonVersion::PY311 {
+                                    if to_bool(weakref_slot, false) {
                                         flags |= DataclassFlags::WEAKREF_SLOT;
-                                    } else {
-                                        // TODO: emit diagnostic
                                     }
+                                } else if weakref_slot.is_some() {
+                                    version_errors.push(BindingError::InvalidDataclassArgVersion {
+                                        arg_name: "weakref_slot",
+                                        minimum_version: PythonVersion::PY311,
+                                    });
                                 }
 
                                 let params = DataclassParams::from_flags(db, flags);
 
                                 overload.set_return_type(Type::DataclassDecorator(params));
+                                overload.errors.extend(version_errors);
                             }
 
                             // `dataclass` being used as a non-decorator (i.e., `dataclass(SomeClass)`)
@@ -4828,6 +4850,11 @@ pub(crate) enum BindingError<'db> {
     CalledTopCallable(Type<'db>),
     /// The `@dataclass` decorator was applied to an invalid target.
     InvalidDataclassApplication(InvalidDataclassTarget),
+    /// A `@dataclass` keyword argument was used that requires a newer Python version.
+    InvalidDataclassArgVersion {
+        arg_name: &'static str,
+        minimum_version: PythonVersion,
+    },
 }
 
 impl BindingError<'_> {
@@ -4869,6 +4896,7 @@ impl BindingError<'_> {
             BindingError::CalledTopCallable(..)
             | BindingError::InternalCallError(..)
             | BindingError::InvalidDataclassApplication(..)
+            | BindingError::InvalidDataclassArgVersion { .. }
             | BindingError::MissingArguments { .. }
             | BindingError::UnmatchedOverload
             | BindingError::PropertyHasNoSetter(..) => {}
@@ -4918,6 +4946,7 @@ impl<'db> BindingError<'db> {
         match self {
             // Semantic errors: the overload matched, but the usage is invalid
             Self::InvalidDataclassApplication(_)
+            | Self::InvalidDataclassArgVersion { .. }
             | Self::PropertyHasNoSetter(_)
             | Self::CalledTopCallable(_)
             | Self::InternalCallError(_) => false,
@@ -5432,6 +5461,22 @@ impl<'db> BindingError<'db> {
                     };
                     let mut diag = builder.into_diagnostic(message);
                     diag.info(info);
+                }
+            }
+
+            Self::InvalidDataclassArgVersion {
+                arg_name,
+                minimum_version,
+            } => {
+                let node = Self::get_node(node, None);
+                if let Some(builder) = context.report_lint(&INVALID_DATACLASS_ARG_VERSION, node) {
+                    let mut diag = builder.into_diagnostic(format_args!(
+                        "Keyword argument `{arg_name}` requires Python {minimum_version} or newer"
+                    ));
+                    diag.info(format_args!(
+                        "Passing `{arg_name}` to `@dataclass` on an older Python version \
+                        raises `TypeError` at runtime"
+                    ));
                 }
             }
         }

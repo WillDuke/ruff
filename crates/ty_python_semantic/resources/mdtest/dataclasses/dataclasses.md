@@ -835,7 +835,7 @@ python-version = "3.9"
 ```py
 from dataclasses import dataclass
 
-@dataclass(kw_only=True)  # TODO: Emit a diagnostic here
+@dataclass(kw_only=True)  # error: [invalid-dataclass-arg-version]
 class A:
     x: int
     y: int
@@ -1069,7 +1069,9 @@ from dataclasses import dataclass
 
 # fmt: off
 
-# TODO: these nonexistent keyword arguments should cause us to emit diagnostics on Python 3.9
+# error: [invalid-dataclass-arg-version]
+# error: [invalid-dataclass-arg-version]
+# error: [invalid-dataclass-arg-version]
 @dataclass(
     slots=True,
     weakref_slot=True,

@@ -759,8 +759,7 @@ class Answer2(Enum):
     MAYBE = 3
     _other = "test"
 
-# TODO: This should be `tuple[Literal["YES"], Literal["NO"]]`
-# revealed: tuple[Literal["YES"], Literal["NO"], Literal["MAYBE"], Literal["_other"]]
+# revealed: tuple[Literal["YES"], Literal["NO"]]
 reveal_type(enum_members(Answer2))
 ```
 

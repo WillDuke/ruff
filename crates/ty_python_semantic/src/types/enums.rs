@@ -1,4 +1,5 @@
-use ruff_python_ast::name::Name;
+use ruff_db::parsed::parsed_module;
+use ruff_python_ast::{self as ast, name::Name};
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
 
@@ -7,7 +8,12 @@ use crate::{
     place::{
         DefinedPlace, Place, PlaceAndQualifiers, place_from_bindings, place_from_declarations,
     },
-    semantic_index::{place_table, scope::ScopeId, use_def_map},
+    semantic_index::{
+        definition::{DefinitionKind, DefinitionState},
+        place_table,
+        scope::ScopeId,
+        use_def_map,
+    },
     types::{
         ClassBase, ClassLiteral, DynamicType, EnumLiteralType, KnownClass, LiteralValueTypeKind,
         MemberLookupPolicy, StaticClassLiteral, Type, TypeQualifiers, function::FunctionType,
@@ -114,16 +120,57 @@ pub(crate) fn enum_metadata<'db>(
     let mut enum_values: FxHashMap<Type<'db>, Name> = FxHashMap::default();
     let mut auto_counter = 0;
     let mut auto_members = FxHashSet::default();
-    let ignored_names: Option<Vec<&str>> = if let Some(ignore) = table.symbol_id("_ignore_") {
-        let ignore_bindings = use_def_map.reachable_symbol_bindings(ignore);
-        let ignore_place = place_from_bindings(db, ignore_bindings).place;
+    let ignored_names: Option<FxHashSet<Name>> = if let Some(ignore) = table.symbol_id("_ignore_") {
+        let ignore_place =
+            place_from_bindings(db, use_def_map.reachable_symbol_bindings(ignore)).place;
 
         match ignore_place {
-            Place::Defined(DefinedPlace { ty, .. }) => ty
-                .as_string_literal()
-                .map(|ignored_names| ignored_names.value(db).split_ascii_whitespace().collect()),
+            Place::Defined(DefinedPlace { ty, .. }) => {
+                if let Some(string) = ty.as_string_literal() {
+                    // `_ignore_ = "MAYBE _other"` (space-separated string)
+                    Some(
+                        string
+                            .value(db)
+                            .split_ascii_whitespace()
+                            .map(Name::new)
+                            .collect(),
+                    )
+                } else {
+                    // `_ignore_ = ["MAYBE", "_other"]` (list/set of string literals)
+                    // Type inference promotes literals to `str`, losing the concrete values,
+                    // so we access the AST directly to extract the names.
+                    (|| {
+                        let def = use_def_map
+                            .reachable_symbol_bindings(ignore)
+                            .filter_map(|b| match b.binding {
+                                DefinitionState::Defined(def) => Some(def),
+                                _ => None,
+                            })
+                            .last()?;
 
-            // TODO: support the list-variant of `_ignore_`.
+                        let DefinitionKind::Assignment(assignment) = def.kind(db) else {
+                            return None;
+                        };
+
+                        let file = def.file(db);
+                        let module = parsed_module(db, file).load(db);
+                        let value = assignment.value(&module);
+
+                        let elts = match value {
+                            ast::Expr::List(list) => &list.elts,
+                            ast::Expr::Tuple(tuple) => &tuple.elts,
+                            _ => return None,
+                        };
+
+                        elts.iter()
+                            .map(|elt| match elt {
+                                ast::Expr::StringLiteral(s) => Some(Name::new(s.value.to_str())),
+                                _ => None,
+                            })
+                            .collect::<Option<FxHashSet<_>>>()
+                    })()
+                }
+            }
             Place::Undefined => None,
         }
     } else {
@@ -146,7 +193,7 @@ pub(crate) fn enum_metadata<'db>(
             if name == "_ignore_"
                 || ignored_names
                     .as_ref()
-                    .is_some_and(|names| names.contains(&name.as_str()))
+                    .is_some_and(|names| names.contains(name.as_str()))
             {
                 // Skip ignored attributes
                 return None;
@@ -437,6 +484,7 @@ pub(crate) fn is_enum_class_by_inheritance<'db>(
             .is_subtype_of(db, KnownClass::EnumType.to_subclass_of(db))
 }
 
+/// Extracts a list of string literal names from a list or set type whose element type
 /// Extracts the inner value type from an `enum.nonmember()` wrapper.
 ///
 /// At runtime, the enum metaclass unwraps `nonmember(value)`, so accessing the attribute

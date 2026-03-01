@@ -58,6 +58,7 @@ pub(crate) fn register_lints(registry: &mut LintRegistryBuilder) {
     registry.register_lint(&POSSIBLY_MISSING_IMPLICIT_CALL);
     registry.register_lint(&INVALID_DATACLASS_OVERRIDE);
     registry.register_lint(&INVALID_DATACLASS);
+    registry.register_lint(&INVALID_DATACLASS_ARG_VERSION);
     registry.register_lint(&CONFLICTING_ARGUMENT_FORMS);
     registry.register_lint(&CONFLICTING_DECLARATIONS);
     registry.register_lint(&CONFLICTING_METACLASS);
@@ -530,6 +531,34 @@ declare_lint! {
     pub(crate) static INVALID_DATACLASS = {
         summary: "detects invalid `@dataclass` applications",
         status: LintStatus::stable("0.0.12"),
+        default_level: Level::Error,
+    }
+}
+
+declare_lint! {
+    /// ## What it does
+    /// Checks for `@dataclass` keyword arguments that are not available in the configured
+    /// Python version.
+    ///
+    /// ## Why is this bad?
+    /// Some parameters of `dataclasses.dataclass` were introduced in newer Python versions:
+    /// - `match_args`, `kw_only`, `slots` require Python 3.10 or newer
+    /// - `weakref_slot` requires Python 3.11 or newer
+    ///
+    /// Passing these arguments on an older Python version raises `TypeError` at runtime.
+    ///
+    /// ## Examples
+    /// ```python
+    /// # Running on Python 3.9
+    /// from dataclasses import dataclass
+    ///
+    /// @dataclass(kw_only=True)  # error: [invalid-dataclass-arg-version]
+    /// class Foo:
+    ///     x: int
+    /// ```
+    pub(crate) static INVALID_DATACLASS_ARG_VERSION = {
+        summary: "detects `@dataclass` arguments not available in the configured Python version",
+        status: LintStatus::stable("0.0.21"),
         default_level: Level::Error,
     }
 }

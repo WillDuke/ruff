@@ -855,8 +855,8 @@ python-version = "3.9"
 from dataclasses import dataclass
 from ty_extensions import static_assert, has_member
 
-# TODO: these parameters don't exist on Python 3.9;
-# we should emit a diagnostic (or two)
+# error: [invalid-dataclass-arg-version]
+# error: [invalid-dataclass-arg-version]
 @dataclass(slots=True, weakref_slot=True)
 class F: ...
 
