@@ -113,4 +113,27 @@ scikit-build-core: {'files': 213, 'lines': 41176, 'ty_flagged': 3296, 'mypy_flag
 httpx-caching: {'files': 29, 'lines': 2310, 'ty_flagged': 512, 'mypy_flagged': 634, 'agree': 2108, 'agree_exact': 2033, 'ty_only': 40, 'mypy_only': 162, 'line_count_mismatch': 0}
 tornado: {'files': 77, 'lines': 51507, 'ty_flagged': 6159, 'mypy_flagged': 13299, 'agree': 42937, 'agree_exact': 41491, 'ty_only': 715, 'mypy_only': 7855, 'line_count_mismatch': 0}
 starlette: {'files': 71, 'lines': 21282, 'ty_flagged': 4532, 'mypy_flagged': 2065, 'agree': 17149, 'agree_exact': 16694, 'ty_only': 3300, 'mypy_only': 833, 'line_count_mismatch': 0}
-mitmproxy: {'files': 519, 'lines': 83986, 'ty_flagged': 19037, 'mypy_flagged': 12876, 'agree': 70835, 'agree_exact': 58114, 't
+mitmproxy: {'files': 519, 'lines': 83986, 'ty_flagged': 19037, 'mypy_flagged': 12876, 'agree': 70835, 'agree_exact': 58114, 'ty_only': 9656, 'mypy_only': 3495, 'line_count_mismatch': 0}
+aiohttp-devtools: {'files': 24, 'lines': 2975, 'ty_flagged': 475, 'mypy_flagged': 861, 'agree': 2531, 'agree_exact': 2488, 'ty_only': 29, 'mypy_only': 415, 'line_count_mismatch': 0}
+trio: {'files': 142, 'lines': 48834, 'ty_flagged': 2165, 'mypy_flagged': 1822, 'agree': 46391, 'agree_exact': 43754, 'ty_only': 1393, 'mypy_only': 1050, 'line_count_mismatch': 0}
+artigraph: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+pwndbg: {'files': 293, 'lines': 117740, 'ty_flagged': 6505, 'mypy_flagged': 7419, 'agree': 114920, 'agree_exact': 110282, 'ty_only': 953, 'mypy_only': 1867, 'line_count_mismatch': 0}
+psycopg: {'files': 232, 'lines': 67936, 'ty_flagged': 22253, 'mypy_flagged': 22666, 'agree': 60487, 'agree_exact': 58042, 'ty_only': 3518, 'mypy_only': 3931, 'line_count_mismatch': 0}
+Tanjun: {'files': 35, 'lines': 32040, 'ty_flagged': 1537, 'mypy_flagged': 2673, 'agree': 30100, 'agree_exact': 28887, 'ty_only': 402, 'mypy_only': 1538, 'line_count_mismatch': 0}
+pytest: {'files': 246, 'lines': 115446, 'ty_flagged': 9312, 'mypy_flagged': 10993, 'agree': 110835, 'agree_exact': 108915, 'ty_only': 1465, 'mypy_only': 3146, 'line_count_mismatch': 0}
+dd-trace-py: {'files': 1217, 'lines': 210333, 'ty_flagged': 40347, 'mypy_flagged': 34931, 'agree': 192483, 'agree_exact': 181087, 'ty_only': 11633, 'mypy_only': 6217, 'line_count_mismatch': 0}
+apprise: {'files': 530, 'lines': 333137, 'ty_flagged': 62266, 'mypy_flagged': 110229, 'agree': 279186, 'agree_exact': 255732, 'ty_only': 2994, 'mypy_only': 50957, 'line_count_mismatch': 0}
+AutoSplit: {'files': 24, 'lines': 6232, 'ty_flagged': 1244, 'mypy_flagged': 1287, 'agree': 5437, 'agree_exact': 4973, 'ty_only': 376, 'mypy_only': 419, 'line_count_mismatch': 0}
+prefect: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+graphql-core: {'files': 358, 'lines': 122539, 'ty_flagged': 15632, 'mypy_flagged': 32741, 'agree': 96872, 'agree_exact': 88658, 'ty_only': 4279, 'mypy_only': 21388, 'line_count_mismatch': 0}
+svcs: {'files': 15, 'lines': 3149, 'ty_flagged': 277, 'mypy_flagged': 255, 'agree': 2893, 'agree_exact': 2725, 'ty_only': 139, 'mypy_only': 117, 'line_count_mismatch': 0}
+poetry: {'files': 381, 'lines': 82055, 'ty_flagged': 18784, 'mypy_flagged': 16790, 'agree': 78431, 'agree_exact': 77076, 'ty_only': 2809, 'mypy_only': 815, 'line_count_mismatch': 0}
+discord.py: {'files': 113, 'lines': 60331, 'ty_flagged': 5839, 'mypy_flagged': 7748, 'agree': 56292, 'agree_exact': 53261, 'ty_only': 1065, 'mypy_only': 2974, 'line_count_mismatch': 0}
+spack: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+bokeh: {'files': 437, 'lines': 71059, 'ty_flagged': 6245, 'mypy_flagged': 6206, 'agree': 67340, 'agree_exact': 63511, 'ty_only': 1879, 'mypy_only': 1840, 'line_count_mismatch': 0}
+meson: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+hydra-zen: {'files': 30, 'lines': 13199, 'ty_flagged': 1867, 'mypy_flagged': 2140, 'agree': 12148, 'agree_exact': 10611, 'ty_only': 389, 'mypy_only': 662, 'line_count_mismatch': 0}
+cloud-init: {'files': 594, 'lines': 191737, 'ty_flagged': 45875, 'mypy_flagged': 67982, 'agree': 163810, 'agree_exact': 154307, 'ty_only': 2910, 'mypy_only': 25017, 'line_count_mismatch': 0}
+arviz: {'files': 6, 'lines': 808, 'ty_flagged': 125, 'mypy_flagged': 175, 'agree': 746, 'agree_exact': 731, 'ty_only': 6, 'mypy_only': 56, 'line_count_mismatch': 0}
+manticore: {'files': 139, 'lines': 290658, 'ty_flagged': 144123, 'mypy_flagged': 207179, 'agree': 224424, 'agree_exact': 221256, 'ty_only': 1589, 'mypy_only': 64645, 'line_count_mismatch': 0}
+hydpy: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only':
