@@ -155,3 +155,10 @@ pandas: {"files": 1474, "lines": 734006, "ty_flagged": 171593, "mypy_flagged": 2
 pandas-stubs: {"files": 308, "lines": 64473, "ty_flagged": 7769, "mypy_flagged": 6686, "agree": 60328, "agree_exact": 50765, "ty_only": 2614, "mypy_only": 1531, "line_count_mismatch": 0}
 core: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
 colour: {"files": 736, "lines": 311356, "ty_flagged": 41519, "mypy_flagged": 30921, "agree": 297516, "agree_exact": 282695, "ty_only": 12219, "mypy_only": 1621, "line_count_mismatch": 0}
+rotki: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+CPython (Argument Clinic): {"files": 21, "lines": 9239, "ty_flagged": 235, "mypy_flagged": 152, "agree": 9076, "agree_exact": 8942, "ty_only": 123, "mypy_only": 40, "line_count_mismatch": 0}
+CPython (cases_generator): {"files": 19, "lines": 7011, "ty_flagged": 117, "mypy_flagged": 105, "agree": 6959, "agree_exact": 6768, "ty_only": 32, "mypy_only": 20, "line_count_mismatch": 0}
+CPython (peg_generator): {"files": 22, "lines": 5150, "ty_flagged": 403, "mypy_flagged": 364, "agree": 5023, "agree_exact": 4791, "ty_only": 83, "mypy_only": 44, "line_count_mismatch": 0}
+sphinx: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+scipy-stubs: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+core: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}

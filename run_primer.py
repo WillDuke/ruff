@@ -222,14 +222,21 @@ def main() -> None:
             ty_cmd = format_cmd(ty_cmd, ty=ty, paths=paths)
             ty_cmd += " --python .venv --output-format concise --no-progress"
             result["ty_check"] = measure(repo, ty_cmd, TY_TIMEOUT)
-            result["ty_report"] = measure(repo, f"{ty_cmd} --html-report {ty_report}", TY_TIMEOUT)
+            result["ty_report"] = measure(
+                repo, f"{ty_cmd} --html-report {shlex.quote(str(ty_report))}", TY_TIMEOUT
+            )
 
             mypy_cmd = project.get("mypy_cmd") or ("{mypy} {paths}" if paths else "{mypy} .")
             mypy_cmd = format_cmd(mypy_cmd, mypy=mypy, paths=paths)
-            mypy_cmd += (" --python-executable=.venv/bin/python --no-incremental"
-                         f" --cache-dir={os.devnull} --soft-error-limit=-1"
-                         f" --html-report {mypy_report}")
-            result["mypy_report"] = measure(repo, mypy_cmd, MYPY_TIMEOUT)
+            mypy_cmd += (" --python-executable=.venv/bin/python --soft-error-limit=-1"
+                         f" --html-report {shlex.quote(str(mypy_report))}")
+            no_cache = f" --no-incremental --cache-dir={os.devnull}"
+            result["mypy_report"] = measure(repo, mypy_cmd + no_cache, MYPY_TIMEOUT)
+            if "Cache must be enabled in parallel mode" in result["mypy_report"]["tail"]:
+                # The project's configuration enables mypy's parallel mode, which needs a cache.
+                cache = f" --cache-dir={shlex.quote(str(work / (name + '-mypy-cache')))}"
+                result["mypy_report"] = measure(repo, mypy_cmd + cache, MYPY_TIMEOUT)
+                result["mypy_parallel_mode"] = True
 
             try:
                 result["comparison"] = compare(ty_report, mypy_report)
@@ -242,7 +249,7 @@ def main() -> None:
         print(f"{name}: {json.dumps(result.get('comparison', {}).get('matched', result.get('error')))}",
               flush=True)
 
-        for path in (repo, ty_report, mypy_report):
+        for path in (repo, ty_report, mypy_report, work / f"{name}-mypy-cache"):
             shutil.rmtree(path, ignore_errors=True)
 
 
