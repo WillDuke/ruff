@@ -1,0 +1,275 @@
+diff --git a/src/ecosystem_analyzer/coverage.py b/src/ecosystem_analyzer/coverage.py
+new file mode 100644
+index 0000000..4300f54
+--- /dev/null
++++ b/src/ecosystem_analyzer/coverage.py
+@@ -0,0 +1,221 @@
++"""Compare ty's `--html-report` with mypy's on the ecosystem projects.
++
++Projects are installed exactly as for `diff` (pinned to `--exclude-newer`, with the same
++dependencies, Python version and uv settings), and ty runs with the same command line. For each
++project this measures:
++
++- ty without and with `--html-report` (wall time and peak memory),
++- mypy with `--html-report`, run as mypy_primer runs it,
++
++and compares the two reports line by line on the files they share. One JSON object per project is
++appended to the output file, and projects already in it are skipped.
++"""
++
++import html
++import json
++import logging
++import os
++import re
++import shutil
++import subprocess
++import sys
++from collections import Counter
++from pathlib import Path
++
++import click
++
++from .config import UV_NO_BUILD_ENV
++from .installed_project import InstalledProject
++from .manager import get_ecosystem_projects
++from .ty import Ty
++
++logger = logging.getLogger(__name__)
++
++TY_TIMEOUT = 900
++MYPY_TIMEOUT = 3600
++
++# Runs one command in a fresh interpreter so that its peak memory is that command's alone.
++MEASURE = """
++import json, resource, subprocess, sys, time
++args = json.loads(sys.argv[1])
++start = time.perf_counter()
++try:
++    proc = subprocess.run(args["cmd"], shell=isinstance(args["cmd"], str), cwd=args["cwd"],
++                          env=args["env"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
++                          text=True, errors="replace", timeout=args["timeout"])
++    code, out = proc.returncode, proc.stdout
++except subprocess.TimeoutExpired:
++    code, out = "timeout", ""
++elapsed = time.perf_counter() - start
++rss_kb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
++print(json.dumps({"seconds": elapsed, "rss_mb": rss_kb / 1024, "code": code, "tail": out[-800:]}))
++"""
++
++
++def measure(cmd: list[str] | str, cwd: Path, env: dict[str, str], timeout: int) -> dict:
++    payload = json.dumps({"cmd": cmd, "cwd": str(cwd), "env": env, "timeout": timeout})
++    out = subprocess.run(
++        [sys.executable, "-c", MEASURE, payload], capture_output=True, text=True, check=True
++    )
++    return json.loads(out.stdout)
++
++
++def mypy_command(project: InstalledProject, mypy: str, report: Path) -> str:
++    """The project's mypy command with the flags mypy_primer adds."""
++    raw = project._project
++    paths = " ".join(raw.paths or [])
++    cmd = raw.mypy_cmd or ("{mypy} {paths}" if paths else "{mypy} .")
++    cmd = cmd.replace("{mypy}", mypy).replace("{paths}", paths)
++    python = project.venv_path / "bin" / "python"
++    return (
++        f"{cmd} --python-executable={python} --warn-unused-ignores --warn-redundant-casts"
++        f" --no-incremental --cache-dir={os.devnull} --show-traceback --soft-error-limit=-1"
++        f" --html-report {report}"
++    )
++
++
++TY_LINE = re.compile(r'<div class="line (\w+)" id="L\d+"(?: title="([^"]*)")?')
++MYPY_LINE = re.compile(r'<span class="line-(\w+)" title="([^"]*)"')
++FLAGGED = {"imprecise", "dynamic", "any"}
++CATEGORY = {"empty": "empty", "unanalyzed": "empty", "precise": "precise",
++            "imprecise": "imprecise", "any": "dynamic", "dynamic": "dynamic"}
++
++
++def report_pages(root: Path, subdir: str) -> dict[str, Path]:
++    base = root / subdir
++    if not base.is_dir():
++        return {}
++    return {str(p.relative_to(base))[: -len(".html")]: p for p in base.rglob("*.html")}
++
++
++def compare(ty_report: Path, mypy_report: Path) -> dict:
++    """Compare the two reports line by line on the files that appear in both."""
++    ty_pages = report_pages(ty_report, "files")
++    mypy_pages = report_pages(mypy_report, "html")
++
++    ty_total = {"lines": 0, "flagged": 0}
++    mypy_total = {"lines": 0, "flagged": 0}
++    matched = {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0,
++               "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
++    ty_only_reasons: Counter = Counter()
++    mypy_only_reasons: Counter = Counter()
++
++    mypy_lines: dict[str, list[tuple[str, str]]] = {}
++    for rel, path in mypy_pages.items():
++        found = [(c, html.unescape(t)) for c, t in MYPY_LINE.findall(path.read_text(errors="replace"))]
++        mypy_lines[rel] = found
++        mypy_total["lines"] += len(found)
++        mypy_total["flagged"] += sum(c in FLAGGED for c, _ in found)
++
++    for rel, path in ty_pages.items():
++        found = [(c, html.unescape(n)) for c, n in TY_LINE.findall(path.read_text(errors="replace"))]
++        ty_total["lines"] += len(found)
++        ty_total["flagged"] += sum(c in FLAGGED for c, _ in found)
++        candidates = [m for m in mypy_lines if m == rel or m.endswith("/" + rel)]
++        if len(candidates) != 1:
++            continue
++        other = mypy_lines[candidates[0]]
++        matched["files"] += 1
++        matched["line_count_mismatch"] += len(other) != len(found)
++        for (tc, note), (mc, title) in zip(found, other):
++            tf, mf = tc in FLAGGED, mc in FLAGGED
++            matched["lines"] += 1
++            matched["ty_flagged"] += tf
++            matched["mypy_flagged"] += mf
++            matched["agree"] += tf == mf
++            matched["agree_exact"] += CATEGORY.get(tc) == CATEGORY.get(mc)
++            if tf and not mf:
++                matched["ty_only"] += 1
++                reason = note.split("\n")[0].split("`: ", 1)[-1]
++                ty_only_reasons[re.sub(r"Literal\[[^\]]*\]", "Literal[…]", reason)[:60]] += 1
++            elif mf and not tf:
++                matched["mypy_only"] += 1
++                kinds = re.findall(r"\n(.+?) \(x\d+\)", title) or [mc]
++                mypy_only_reasons[", ".join(sorted(set(kinds)))] += 1
++
++    return {
++        "ty_files": len(ty_pages), "mypy_files": len(mypy_pages),
++        "ty_total": ty_total, "mypy_total": mypy_total, "matched": matched,
++        "ty_only_reasons": ty_only_reasons.most_common(8),
++        "mypy_only_reasons": mypy_only_reasons.most_common(8),
++    }
++
++
++@click.command("coverage-compare")
++@click.option("--ty-binary", type=click.Path(exists=True, path_type=Path), required=True)
++@click.option("--mypy", "mypy_binary", type=click.Path(exists=True), required=True,
++              help="The mypy executable, from an environment of its own.")
++@click.option("--exclude-newer", required=True,
++              help="Pin projects and dependencies to this ISO 8601 timestamp, as in CI.")
++@click.option("--output", type=click.Path(path_type=Path), required=True,
++              help="JSON Lines file of results; projects already in it are skipped.")
++@click.option("--work-dir", type=click.Path(path_type=Path), required=True,
++              help="Where the reports are written while a project is compared.")
++@click.option("--project", "only_projects", multiple=True, help="Only compare these projects.")
++@click.option("--delete-checkouts/--keep-checkouts", default=True,
++              help="Delete each project's cached checkout afterwards to save disk space.")
++def coverage_compare(ty_binary: Path, mypy_binary: str, exclude_newer: str, output: Path,
++                     work_dir: Path, only_projects: tuple[str, ...], delete_checkouts: bool) -> None:
++    """Compare ty's and mypy's HTML coverage reports on the ecosystem projects."""
++    ty = Ty()
++    ty.use_prebuilt(ty_binary, "prebuilt")
++    projects = get_ecosystem_projects()
++    names = sorted(only_projects or projects, key=lambda n: projects[n].cost_for_type_checker("mypy"))
++    done = set()
++    if output.exists():
++        done = {json.loads(line)["name"] for line in output.read_text().splitlines() if line}
++    work_dir.mkdir(parents=True, exist_ok=True)
++    env = {**os.environ, **UV_NO_BUILD_ENV}
++
++    for name in names:
++        if name in done:
++            continue
++        project = projects[name]
++        result: dict = {"name": name, "location": project.location,
++                        "mypy_cost": project.cost_for_type_checker("mypy"),
++                        "needs_mypy_plugins": project.needs_mypy_plugins}
++        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", name)
++        ty_report = work_dir / f"{safe}-ty-report"
++        mypy_report = work_dir / f"{safe}-mypy-report"
++        installed = None
++        try:
++            installed = InstalledProject(project, exclude_newer=exclude_newer)
++        except Exception as error:  # noqa: BLE001
++            result["error"] = f"setup failed: {type(error).__name__}: {str(error)[-400:]}"
++        else:
++            result["commit"] = installed.current_commit
++            cmd, result["strict_settings"] = ty.command_for_project(installed)
++            cmd = [*cmd, "--no-progress"]
++            cwd = installed.root_directory
++            # Warm the file system and uv caches so that the first measured run doesn't pay for
++            # them, then measure.
++            measure(cmd, cwd, env, TY_TIMEOUT)
++            result["ty_check"] = measure(cmd, cwd, env, TY_TIMEOUT)
++            result["ty_report"] = measure([*cmd, "--html-report", str(ty_report)], cwd, env, TY_TIMEOUT)
++
++            mypy_env = dict(os.environ)
++            if project.needs_mypy_plugins:
++                # Let mypy import plugins installed in the project's environment.
++                site = next((installed.venv_path / "lib").glob("python*/site-packages"), None)
++                if site is not None:
++                    mypy_env["PYTHONPATH"] = str(site)
++            mypy_cmd = mypy_command(installed, mypy_binary, mypy_report)
++            result["mypy_report"] = measure(mypy_cmd, cwd, mypy_env, MYPY_TIMEOUT)
++            if "parallel mode" in result["mypy_report"]["tail"]:
++                # The project's configuration enables mypy's parallel mode, which can't write
++                # reports, so check on a single thread.
++                result["mypy_report"] = measure(f"{mypy_cmd} -n0", cwd, mypy_env, MYPY_TIMEOUT)
++                result["mypy_parallel_mode"] = True
++            result["comparison"] = compare(ty_report, mypy_report)
++
++        with output.open("a") as f:
++            f.write(json.dumps(result) + "\n")
++        matched = result.get("comparison", {}).get("matched", {})
++        click.echo(f"{name}: {result.get('error') or matched}", err=False)
++
++        shutil.rmtree(ty_report, ignore_errors=True)
++        shutil.rmtree(mypy_report, ignore_errors=True)
++        if installed is not None:
++            installed._temp_dir.cleanup()
++            if delete_checkouts:
++                shutil.rmtree(installed.root_directory, ignore_errors=True)
+diff --git a/src/ecosystem_analyzer/main.py b/src/ecosystem_analyzer/main.py
+index f0feeed..19f2abb 100644
+--- a/src/ecosystem_analyzer/main.py
++++ b/src/ecosystem_analyzer/main.py
+@@ -766,5 +766,10 @@ def parse_diagnostics(
+     click.echo(f"Parsed {len(diagnostics)} diagnostics and wrote to {output_path}")
+ 
+ 
++from .coverage import coverage_compare  # noqa: E402
++
++cli.add_command(coverage_compare)
++
++
+ if __name__ == "__main__":
+     cli()
+diff --git a/src/ecosystem_analyzer/ty.py b/src/ecosystem_analyzer/ty.py
+index b811009..34fbbc7 100644
+--- a/src/ecosystem_analyzer/ty.py
++++ b/src/ecosystem_analyzer/ty.py
+@@ -134,10 +134,8 @@ class Ty:
+             )
+         return run("git", "rev-parse", "HEAD", cwd=self.repository).strip()
+ 
+-    def run_on_project(self, project: InstalledProject) -> RunOutput:
+-        """Analyze one installed project and collect diagnostics and exit evidence."""
+-
+-        logger.info(f"Running ty on project '{project.name}'")
++    def command_for_project(self, project: InstalledProject) -> tuple[list[str], bool]:
++        """Return the ty command for a project, and whether it uses strict settings."""
+ 
+         # Standard flags to add to all ty check commands
+         standard_flags = [
+@@ -176,6 +174,15 @@ class Ty:
+                 *standard_flags,
+                 *project.paths,
+             ]
++        return cmd, strict_settings
++
++    def run_on_project(self, project: InstalledProject) -> RunOutput:
++        """Analyze one installed project and collect diagnostics and exit evidence."""
++
++        logger.info(f"Running ty on project '{project.name}'")
++
++        cmd, strict_settings = self.command_for_project(project)
++
+         logger.debug(f"Executing: {' '.join(cmd)}")
+         env = {**os.environ, **UV_NO_BUILD_ENV}
+         start_time = time.time()
