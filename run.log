@@ -135,4 +135,23 @@ hydpy: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, 
 mypy: {"files": 339, "lines": 184083, "ty_flagged": 6499, "mypy_flagged": 3058, "agree": 177836, "agree_exact": 169984, "ty_only": 4844, "mypy_only": 1403, "line_count_mismatch": 0}
 imagehash: {"files": 1, "lines": 706, "ty_flagged": 241, "mypy_flagged": 132, "agree": 575, "agree_exact": 543, "ty_only": 120, "mypy_only": 11, "line_count_mismatch": 0}
 cwltool: {"files": 109, "lines": 29792, "ty_flagged": 3459, "mypy_flagged": 2892, "agree": 28075, "agree_exact": 27073, "ty_only": 1142, "mypy_only": 575, "line_count_mismatch": 0}
-ibis: {"files": 556, "lines": 181130, "ty_flagged": 59678, "mypy_flagged": 69444, "agree": 164830, "agree_exact": 158739, "ty_only": 32
+ibis: {"files": 556, "lines": 181130, "ty_flagged": 59678, "mypy_flagged": 69444, "agree": 164830, "agree_exact": 158739, "ty_only": 3267, "mypy_only": 13033, "line_count_mismatch": 0}
+materialize: {"files": 698, "lines": 117509, "ty_flagged": 9438, "mypy_flagged": 9310, "agree": 114407, "agree_exact": 110372, "ty_only": 1615, "mypy_only": 1487, "line_count_mismatch": 0}
+optuna: {"files": 324, "lines": 63749, "ty_flagged": 9529, "mypy_flagged": 8823, "agree": 61011, "agree_exact": 59600, "ty_only": 1722, "mypy_only": 1016, "line_count_mismatch": 0}
+altair: {"files": 19, "lines": 68051, "ty_flagged": 5529, "mypy_flagged": 3667, "agree": 65087, "agree_exact": 62026, "ty_only": 2413, "mypy_only": 551, "line_count_mismatch": 0}
+sphinx: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+scipy: {"files": 824, "lines": 562103, "ty_flagged": 181043, "mypy_flagged": 242167, "agree": 493925, "agree_exact": 464696, "ty_only": 3527, "mypy_only": 64651, "line_count_mismatch": 0}
+freqtrade: {"files": 335, "lines": 66917, "ty_flagged": 13452, "mypy_flagged": 12602, "agree": 62035, "agree_exact": 59616, "ty_only": 2866, "mypy_only": 2016, "line_count_mismatch": 0}
+scikit-learn: {"files": 659, "lines": 380462, "ty_flagged": 117371, "mypy_flagged": 155333, "agree": 335510, "agree_exact": 308662, "ty_only": 3495, "mypy_only": 41457, "line_count_mismatch": 0}
+spark: {"files": 1287, "lines": 489660, "ty_flagged": 89531, "mypy_flagged": 37647, "agree": 412646, "agree_exact": 350473, "ty_only": 64449, "mypy_only": 12565, "line_count_mismatch": 0}
+zulip: {"files": 2015, "lines": 428451, "ty_flagged": 70974, "mypy_flagged": 81646, "agree": 397215, "agree_exact": 383612, "ty_only": 10282, "mypy_only": 20954, "line_count_mismatch": 0}
+sympy: {"files": 1533, "lines": 799078, "ty_flagged": 267945, "mypy_flagged": 366284, "agree": 687815, "agree_exact": 650020, "ty_only": 6462, "mypy_only": 104801, "line_count_mismatch": 0}
+pandera: {"files": 465, "lines": 122466, "ty_flagged": 33137, "mypy_flagged": 41698, "agree": 107765, "agree_exact": 100899, "ty_only": 3070, "mypy_only": 11631, "line_count_mismatch": 0}
+xarray: {"files": 201, "lines": 199359, "ty_flagged": 55752, "mypy_flagged": 61930, "agree": 182445, "agree_exact": 172020, "ty_only": 5368, "mypy_only": 11546, "line_count_mismatch": 0}
+static-frame: {"files": 163, "lines": 164029, "ty_flagged": 44974, "mypy_flagged": 12522, "agree": 126307, "agree_exact": 89927, "ty_only": 35087, "mypy_only": 2635, "line_count_mismatch": 0}
+scipy-stubs: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+jax: {"files": 606, "lines": 357213, "ty_flagged": 104821, "mypy_flagged": 110132, "agree": 328836, "agree_exact": 312272, "ty_only": 11533, "mypy_only": 16844, "line_count_mismatch": 2}
+pandas: {"files": 1474, "lines": 734006, "ty_flagged": 171593, "mypy_flagged": 286696, "agree": 593107, "agree_exact": 543259, "ty_only": 12898, "mypy_only": 128001, "line_count_mismatch": 0}
+pandas-stubs: {"files": 308, "lines": 64473, "ty_flagged": 7769, "mypy_flagged": 6686, "agree": 60328, "agree_exact": 50765, "ty_only": 2614, "mypy_only": 1531, "line_count_mismatch": 0}
+core: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+colour: {"files": 736, "lines": 311356, "ty_flagged": 41519, "mypy_flagged": 30921, "agree": 297516, "agree_exact": 282695, "ty_only": 12219, "mypy_only": 1621, "line_count_mismatch": 0}
