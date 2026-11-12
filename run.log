@@ -162,3 +162,7 @@ CPython (peg_generator): {"files": 22, "lines": 5150, "ty_flagged": 403, "mypy_f
 sphinx: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
 scipy-stubs: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
 core: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+rotki: {"files": 2639, "lines": 514127, "ty_flagged": 63314, "mypy_flagged": 100354, "agree": 460701, "agree_exact": 442300, "ty_only": 8193, "mypy_only": 45233, "line_count_mismatch": 0}
+sphinx: {"files": 238, "lines": 86957, "ty_flagged": 9014, "mypy_flagged": 8923, "agree": 83776, "agree_exact": 81117, "ty_only": 1636, "mypy_only": 1545, "line_count_mismatch": 0}
+scipy-stubs: {"files": 833, "lines": 145130, "ty_flagged": 23522, "mypy_flagged": 10184, "agree": 128168, "agree_exact": 110325, "ty_only": 15150, "mypy_only": 1812, "line_count_mismatch": 0}
+core: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}

@@ -34,7 +34,7 @@ from pathlib import Path
 CLONE_TIMEOUT = 600
 INSTALL_TIMEOUT = 900
 TY_TIMEOUT = 900
-MYPY_TIMEOUT = 1800
+MYPY_TIMEOUT = 3600
 
 MEASURE = """
 import json, resource, subprocess, sys, time
@@ -233,9 +233,9 @@ def main() -> None:
             no_cache = f" --no-incremental --cache-dir={os.devnull}"
             result["mypy_report"] = measure(repo, mypy_cmd + no_cache, MYPY_TIMEOUT)
             if "Cache must be enabled in parallel mode" in result["mypy_report"]["tail"]:
-                # The project's configuration enables mypy's parallel mode, which needs a cache.
-                cache = f" --cache-dir={shlex.quote(str(work / (name + '-mypy-cache')))}"
-                result["mypy_report"] = measure(repo, mypy_cmd + cache, MYPY_TIMEOUT)
+                # The project's configuration enables mypy's parallel mode, which can't write
+                # reports, so check on a single thread.
+                result["mypy_report"] = measure(repo, mypy_cmd + no_cache + " -n0", MYPY_TIMEOUT)
                 result["mypy_parallel_mode"] = True
 
             try:
