@@ -91,4 +91,48 @@ typeshed-stats: {"files": 15, "lines": 4958, "ty_flagged": 263, "mypy_flagged": 
 pywin32: {"files": 464, "lines": 116229, "ty_flagged": 27130, "mypy_flagged": 44228, "agree": 98141, "agree_exact": 93814, "ty_only": 495, "mypy_only": 17593, "line_count_mismatch": 1}
 schemathesis: {"files": 389, "lines": 104741, "ty_flagged": 21815, "mypy_flagged": 17580, "agree": 98302, "agree_exact": 94362, "ty_only": 5337, "mypy_only": 1102, "line_count_mismatch": 0}
 schema_salad: "setup failed: CalledProcessError: b'grep: mypy-requirements.txt: No such file or directory\\nerror: File not found: requirements.txt\\n'"
-aiohttp: "setup failed: CalledProcessError: b'or: Failed to build `aiohttp @ file:///tmp/claude-0/-home-user-ruff/e0cf2ee9-f
+aiohttp: "setup failed: CalledProcessError: b'or: Failed to build `aiohttp @ file:///tmp/claude-0/-home-user-ruff/e0cf2ee9-f011-5f9b-96bb-0ffd436770ca/scratchpad/primer/work/aiohttp`\\n  cause: The build backend returned an error\\n  cause: Call to `setuptools.build_meta.get_requires_for_build_editable` failed (exit status: 2)\\n\\n         [stderr]\\n         Install submodules when building from git clone\\n         Hint:\\n           git submodule update --init\\n\\nhint: Build failures usually indicate a problem with the package or the build environment\\n'"
+dulwich: {"files": 78, "lines": 83764, "ty_flagged": 2834, "mypy_flagged": 3066, "agree": 81834, "agree_exact": 80585, "ty_only": 849, "mypy_only": 1081, "line_count_mismatch": 0}
+openlibrary: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+comtypes: {"files": 148, "lines": 29823, "ty_flagged": 7121, "mypy_flagged": 10020, "agree": 23906, "agree_exact": 22492, "ty_only": 1509, "mypy_only": 4408, "line_count_mismatch": 0}
+archinstall: {"files": 158, "lines": 24258, "ty_flagged": 1203, "mypy_flagged": 1691, "agree": 22892, "agree_exact": 21950, "ty_only": 439, "mypy_only": 927, "line_count_mismatch": 0}
+pylint: {"files": 51, "lines": 30919, "ty_flagged": 8717, "mypy_flagged": 8628, "agree": 30062, "agree_exact": 29496, "ty_only": 473, "mypy_only": 384, "line_count_mismatch": 0}
+dedupe: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+urllib3: {"files": 83, "lines": 35489, "ty_flagged": 2644, "mypy_flagged": 2825, "agree": 34164, "agree_exact": 33211, "ty_only": 572, "mypy_only": 753, "line_count_mismatch": 0}
+speedrun.com_global_scoreboard_webapp: {"files": 17, "lines": 2980, "ty_flagged": 476, "mypy_flagged": 572, "agree": 2634, "agree_exact": 2498, "ty_only": 125, "mypy_only": 221, "line_count_mismatch": 0}
+scrapy: {"files": 536, "lines": 112112, "ty_flagged": 19325, "mypy_flagged": 26173, "agree": 100000, "agree_exact": 96682, "ty_only": 2632, "mypy_only": 9480, "line_count_mismatch": 1}
+pip: {"files": 439, "lines": 151978, "ty_flagged": 10223, "mypy_flagged": 3908, "agree": 143435, "agree_exact": 120161, "ty_only": 7429, "mypy_only": 1114, "line_count_mismatch": 0}
+mongo-python-driver: "setup failed: CalledProcessError: b'error: Required uv version `==0.12.12` does not match the running version `0.13.7`. Update `uv` by running `uv self update 0.12.12`.\\n'"
+steam.py: {"files": 107, "lines": 29420, "ty_flagged": 7904, "mypy_flagged": 8822, "agree": 27816, "agree_exact": 27327, "ty_only": 343, "mypy_only": 1261, "line_count_mismatch": 0}
+scikit-build-core: {"files": 213, "lines": 41176, "ty_flagged": 3296, "mypy_flagged": 4551, "agree": 38669, "agree_exact": 37656, "ty_only": 626, "mypy_only": 1881, "line_count_mismatch": 0}
+httpx-caching: {"files": 29, "lines": 2310, "ty_flagged": 543, "mypy_flagged": 648, "agree": 2107, "agree_exact": 2033, "ty_only": 49, "mypy_only": 154, "line_count_mismatch": 0}
+tornado: {"files": 77, "lines": 51532, "ty_flagged": 6169, "mypy_flagged": 13309, "agree": 42956, "agree_exact": 41510, "ty_only": 718, "mypy_only": 7858, "line_count_mismatch": 0}
+starlette: {"files": 71, "lines": 21282, "ty_flagged": 5151, "mypy_flagged": 2576, "agree": 17055, "agree_exact": 16593, "ty_only": 3401, "mypy_only": 826, "line_count_mismatch": 0}
+mitmproxy: {"files": 519, "lines": 83986, "ty_flagged": 20122, "mypy_flagged": 13398, "agree": 70478, "agree_exact": 58214, "ty_only": 10116, "mypy_only": 3392, "line_count_mismatch": 0}
+aiohttp-devtools: {"files": 24, "lines": 2975, "ty_flagged": 609, "mypy_flagged": 937, "agree": 2567, "agree_exact": 2525, "ty_only": 40, "mypy_only": 368, "line_count_mismatch": 0}
+trio: {"files": 142, "lines": 48834, "ty_flagged": 2196, "mypy_flagged": 1824, "agree": 46384, "agree_exact": 43748, "ty_only": 1411, "mypy_only": 1039, "line_count_mismatch": 0}
+artigraph: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+pwndbg: {"files": 293, "lines": 117740, "ty_flagged": 6505, "mypy_flagged": 7419, "agree": 114920, "agree_exact": 110282, "ty_only": 953, "mypy_only": 1867, "line_count_mismatch": 0}
+psycopg: {"files": 232, "lines": 67936, "ty_flagged": 19691, "mypy_flagged": 22666, "agree": 61627, "agree_exact": 59243, "ty_only": 1667, "mypy_only": 4642, "line_count_mismatch": 0}
+Tanjun: {"files": 35, "lines": 32040, "ty_flagged": 1537, "mypy_flagged": 2673, "agree": 30100, "agree_exact": 28887, "ty_only": 402, "mypy_only": 1538, "line_count_mismatch": 0}
+pytest: {"files": 246, "lines": 115446, "ty_flagged": 9774, "mypy_flagged": 11383, "agree": 110891, "agree_exact": 108947, "ty_only": 1473, "mypy_only": 3082, "line_count_mismatch": 0}
+dd-trace-py: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+apprise: {"files": 530, "lines": 333137, "ty_flagged": 65135, "mypy_flagged": 110850, "agree": 280216, "agree_exact": 257230, "ty_only": 3603, "mypy_only": 49318, "line_count_mismatch": 0}
+AutoSplit: {"files": 24, "lines": 6232, "ty_flagged": 1244, "mypy_flagged": 1287, "agree": 5437, "agree_exact": 4973, "ty_only": 376, "mypy_only": 419, "line_count_mismatch": 0}
+prefect: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+graphql-core: {"files": 358, "lines": 122539, "ty_flagged": 15798, "mypy_flagged": 32741, "agree": 96762, "agree_exact": 88515, "ty_only": 4417, "mypy_only": 21360, "line_count_mismatch": 0}
+svcs: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+poetry: {"files": 381, "lines": 82055, "ty_flagged": 18832, "mypy_flagged": 16807, "agree": 78402, "agree_exact": 77050, "ty_only": 2839, "mypy_only": 814, "line_count_mismatch": 0}
+discord.py: {"files": 113, "lines": 60331, "ty_flagged": 5850, "mypy_flagged": 7748, "agree": 56297, "agree_exact": 53265, "ty_only": 1068, "mypy_only": 2966, "line_count_mismatch": 0}
+spack: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+bokeh: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+meson: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+hydra-zen: {"files": 30, "lines": 13199, "ty_flagged": 1867, "mypy_flagged": 2140, "agree": 12148, "agree_exact": 10611, "ty_only": 389, "mypy_only": 662, "line_count_mismatch": 0}
+cloud-init: {"files": 594, "lines": 191737, "ty_flagged": 46354, "mypy_flagged": 68264, "agree": 163979, "agree_exact": 154482, "ty_only": 2924, "mypy_only": 24834, "line_count_mismatch": 0}
+arviz: {"files": 6, "lines": 808, "ty_flagged": 125, "mypy_flagged": 175, "agree": 746, "agree_exact": 731, "ty_only": 6, "mypy_only": 56, "line_count_mismatch": 0}
+manticore: {"files": 139, "lines": 290658, "ty_flagged": 144170, "mypy_flagged": 207208, "agree": 224434, "agree_exact": 221271, "ty_only": 1593, "mypy_only": 64631, "line_count_mismatch": 0}
+hydpy: {"files": 0, "lines": 0, "ty_flagged": 0, "mypy_flagged": 0, "agree": 0, "agree_exact": 0, "ty_only": 0, "mypy_only": 0, "line_count_mismatch": 0}
+mypy: {"files": 339, "lines": 184083, "ty_flagged": 6499, "mypy_flagged": 3058, "agree": 177836, "agree_exact": 169984, "ty_only": 4844, "mypy_only": 1403, "line_count_mismatch": 0}
+imagehash: {"files": 1, "lines": 706, "ty_flagged": 241, "mypy_flagged": 132, "agree": 575, "agree_exact": 543, "ty_only": 120, "mypy_only": 11, "line_count_mismatch": 0}
+cwltool: {"files": 109, "lines": 29792, "ty_flagged": 3459, "mypy_flagged": 2892, "agree": 28075, "agree_exact": 27073, "ty_only": 1142, "mypy_only": 575, "line_count_mismatch": 0}
+ibis: {"files": 556, "lines": 181130, "ty_flagged": 59678, "mypy_flagged": 69444, "agree": 164830, "agree_exact": 158739, "ty_only": 32
