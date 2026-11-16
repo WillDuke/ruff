@@ -231,4 +231,30 @@ Tanjun: {'files': 35, 'lines': 32040, 'ty_flagged': 1224, 'mypy_flagged': 2673, 
 warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
 pytest: {'files': 246, 'lines': 115446, 'ty_flagged': 9018, 'mypy_flagged': 10993, 'agree': 111055, 'agree_exact': 109954, 'ty_only': 1208, 'mypy_only': 3183, 'line_count_mismatch': 0}
 warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
-dd-trace-py: {'files': 1221, 'lines': 211354, 'ty_flagged': 39386, 'mypy_flagged': 34775, 'agree': 193883, 'agree_exact': 1828
+dd-trace-py: {'files': 1221, 'lines': 211354, 'ty_flagged': 39386, 'mypy_flagged': 34775, 'agree': 193883, 'agree_exact': 182866, 'ty_only': 11041, 'mypy_only': 6430, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+apprise: {'files': 530, 'lines': 333137, 'ty_flagged': 60823, 'mypy_flagged': 110229, 'agree': 279737, 'agree_exact': 263917, 'ty_only': 1997, 'mypy_only': 51403, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+AutoSplit: {'files': 24, 'lines': 6232, 'ty_flagged': 1236, 'mypy_flagged': 1287, 'agree': 5439, 'agree_exact': 4981, 'ty_only': 371, 'mypy_only': 422, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+prefect: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+graphql-core: {'files': 358, 'lines': 122539, 'ty_flagged': 12476, 'mypy_flagged': 32741, 'agree': 98482, 'agree_exact': 92395, 'ty_only': 1896, 'mypy_only': 22161, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+svcs: {'files': 15, 'lines': 3149, 'ty_flagged': 248, 'mypy_flagged': 255, 'agree': 2912, 'agree_exact': 2748, 'ty_only': 115, 'mypy_only': 122, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+poetry: {'files': 381, 'lines': 82055, 'ty_flagged': 17771, 'mypy_flagged': 16790, 'agree': 79292, 'agree_exact': 78554, 'ty_only': 1872, 'mypy_only': 891, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+discord.py: {'files': 113, 'lines': 60331, 'ty_flagged': 5469, 'mypy_flagged': 7748, 'agree': 56414, 'agree_exact': 53414, 'ty_only': 819, 'mypy_only': 3098, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+spack: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+bokeh: {'files': 437, 'lines': 71059, 'ty_flagged': 5967, 'mypy_flagged': 6206, 'agree': 67540, 'agree_exact': 63728, 'ty_only': 1640, 'mypy_only': 1879, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+meson: {'files': 0, 'lines': 0, 'ty_flagged': 0, 'mypy_flagged': 0, 'agree': 0, 'agree_exact': 0, 'ty_only': 0, 'mypy_only': 0, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+hydra-zen: {'files': 30, 'lines': 13199, 'ty_flagged': 1689, 'mypy_flagged': 2140, 'agree': 12132, 'agree_exact': 10683, 'ty_only': 308, 'mypy_only': 759, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+cloud-init: {'files': 594, 'lines': 191737, 'ty_flagged': 44246, 'mypy_flagged': 67982, 'agree': 164451, 'agree_exact': 157766, 'ty_only': 1775, 'mypy_only': 25511, 'line_count_mismatch': 0}
+warning: The `UV_NATIVE_TLS` environment variable is deprecated and will be removed in a future release. Use `UV_SYSTEM_CERTS` instead.
+arviz: {'files': 6, 'lines': 808, 'ty_flagged': 123, 'mypy_flagged': 175, 'agree': 744, 'agree_exact': 736, 'ty_only': 6, 'mypy_only': 58, 'line_count
