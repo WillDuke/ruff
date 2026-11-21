@@ -88,7 +88,13 @@ pub(crate) struct CheckCommand {
 
     /// Write an HTML report of how precisely ty infers the types on each line to the given
     /// directory (preview).
-    #[arg(long, value_name = "DIR", conflicts_with_all = ["fix", "add_ignore", "update_baseline"])]
+    // Not supported in watch mode: the report directory is usually inside the watched project, so
+    // writing the report would trigger another check, which would write the report again.
+    #[arg(
+        long,
+        value_name = "DIR",
+        conflicts_with_all = ["watch", "fix", "add_ignore", "update_baseline"]
+    )]
     pub(crate) html_report: Option<SystemPathBuf>,
 
     /// Run the command within the given project directory.

@@ -744,7 +744,7 @@ impl MainLoop {
 #[derive(Clone, Debug)]
 enum MainLoopMode {
     Check {
-        /// The directory to write the HTML coverage report to after each check, if any.
+        /// The directory to write the HTML coverage report to after the check, if any.
         html_report: Option<SystemPathBuf>,
     },
     Fix(FixMode),

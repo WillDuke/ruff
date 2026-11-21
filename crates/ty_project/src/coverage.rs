@@ -6,14 +6,17 @@
 //! its own.
 
 use std::fmt::{self, Display, Formatter};
+use std::io;
 
 use anyhow::Context;
+use camino::Utf8Component;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_db::cancellation::CancellationToken;
 use ruff_db::files::File;
 use ruff_db::source::{SourceText, is_notebook, source_text};
-use ruff_db::system::{SystemPath, SystemPathBuf};
+use ruff_db::system::{SystemPath, SystemPathBuf, WritableSystem};
 use ruff_source_file::UniversalNewlines;
+use rustc_hash::FxHashSet;
 use ty_python_semantic::coverage::{Line, LineCoverage, line_coverage};
 
 use crate::parallel::ParallelIteratorExt;
@@ -85,8 +88,7 @@ pub fn write_html_report(
 
     // Show paths relative to the deepest directory that contains all files.
     let prefix = common_parent(files.iter().map(|(_, path)| path.as_path()));
-    let relative_path =
-        |path: &SystemPathBuf| path.strip_prefix(&prefix).unwrap_or(path).to_path_buf();
+    let relative_path = |path: &SystemPathBuf| report_path(path, &prefix);
 
     // Write the file pages in parallel, keeping only their line counts so that the coverage of all
     // files is never in memory at once.
@@ -115,14 +117,21 @@ pub fn write_html_report(
     };
     write_file(db, &output_dir.join("index.html"), &index)?;
 
+    let pages: FxHashSet<SystemPathBuf> = index
+        .files
+        .iter()
+        .map(|(path, _)| output_dir.join(page_path(path)))
+        .collect();
+    remove_stale_pages(writable_system(db)?, &output_dir.join("files"), &pages)?;
+
     Ok(Some(index.total()))
 }
 
 /// The index page: a summary of the project, and a row per file.
 struct IndexPage<'a> {
     project: &'a str,
-    /// Each file's path relative to the report's root, and its line counts.
-    files: Vec<(SystemPathBuf, CoverageCounts)>,
+    /// Each file's path relative to the report's root (see [`report_path`]), and its line counts.
+    files: Vec<(String, CoverageCounts)>,
 }
 
 impl IndexPage<'_> {
@@ -159,7 +168,7 @@ impl Display for IndexPage<'_> {
                 f,
                 "<tr><td><a href=\"{}\">{}</a></td><td>{}</td><td>{:.2}%</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
                 Escaped(&page_path(path)),
-                Escaped(path.as_str()),
+                Escaped(path),
                 Bar(*counts, "bar"),
                 counts.imprecision() * 100.0,
                 counts.total(),
@@ -175,14 +184,15 @@ impl Display for IndexPage<'_> {
 
 /// The page for a single file: its source, with each line colored by its coverage.
 struct FilePage {
-    relative_path: SystemPathBuf,
+    /// The file's path relative to the report's root (see [`report_path`]).
+    relative_path: String,
     source: SourceText,
     lines: Vec<Line>,
     counts: CoverageCounts,
 }
 
 impl FilePage {
-    fn new(db: &dyn Db, file: File, relative_path: SystemPathBuf) -> Self {
+    fn new(db: &dyn Db, file: File, relative_path: String) -> Self {
         let source = source_text(db, file);
         let lines = line_coverage(db, file);
 
@@ -213,8 +223,9 @@ impl FilePage {
 
 impl Display for FilePage {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let title = Escaped(self.relative_path.as_str());
-        // Link back to `index.html` from the page's directory.
+        let title = Escaped(&self.relative_path);
+        // Link back to `index.html` from the page's directory. Page paths always use `/` as their
+        // separator (see `report_path`), so this also holds on Windows.
         let index_link = "../".repeat(self.page_path().matches('/').count()) + "index.html";
 
         writeln!(f, "<!DOCTYPE html>\n<html lang=\"en\">\n<head>")?;
@@ -322,15 +333,74 @@ fn write_head(f: &mut Formatter<'_>, title: impl Display) -> fmt::Result {
 }
 
 /// The path of a file's page, relative to the report's root.
-fn page_path(relative_path: &SystemPath) -> String {
+fn page_path(relative_path: &str) -> String {
     format!("files/{relative_path}.html")
 }
 
-fn write_file(db: &dyn Db, path: &SystemPath, contents: &impl Display) -> anyhow::Result<()> {
-    let system = db
-        .system()
+/// Returns `path` relative to `prefix`, with its components separated by `/` on every platform,
+/// so that it can be used both in links and as a path below the report's `files` directory.
+///
+/// Only normal components are kept, so the result never escapes that directory: if `path` isn't
+/// below `prefix`, as when the files are on different Windows drives and have no common parent,
+/// its root is dropped and a drive prefix such as `C:` becomes a directory `C`.
+fn report_path(path: &SystemPath, prefix: &SystemPath) -> String {
+    let relative = path.strip_prefix(prefix).unwrap_or(path);
+    relative
+        .components()
+        .filter_map(|component| match component {
+            Utf8Component::Normal(name) => Some(name),
+            Utf8Component::Prefix(drive) => Some(drive.as_str().trim_end_matches(':')),
+            Utf8Component::RootDir | Utf8Component::CurDir | Utf8Component::ParentDir => None,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+/// Removes the pages below `directory` that aren't in `pages`, such as the pages of files that
+/// were deleted since the report was last written, so that the report doesn't keep outdated
+/// pages around.
+///
+/// Only `.html` files are removed, so that other files in the report's directory are left alone.
+fn remove_stale_pages(
+    system: &dyn WritableSystem,
+    directory: &SystemPath,
+    pages: &FxHashSet<SystemPathBuf>,
+) -> anyhow::Result<()> {
+    let entries = match system.read_directory(directory) {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => {
+            return Err(error).with_context(|| format!("Failed to read directory `{directory}`"));
+        }
+    };
+    let entries = entries
+        .collect::<io::Result<Vec<_>>>()
+        .with_context(|| format!("Failed to read directory `{directory}`"))?;
+
+    for entry in entries {
+        let path = entry.path();
+        if entry.file_type().is_directory() {
+            remove_stale_pages(system, path, pages)?;
+        } else if entry.file_type().is_file()
+            && path.extension() == Some("html")
+            && !pages.contains(path)
+        {
+            system
+                .remove_file(path)
+                .with_context(|| format!("Failed to remove `{path}`"))?;
+        }
+    }
+    Ok(())
+}
+
+fn writable_system(db: &dyn Db) -> anyhow::Result<&dyn WritableSystem> {
+    db.system()
         .as_writable()
-        .context("The active file system is read-only")?;
+        .context("The active file system is read-only")
+}
+
+fn write_file(db: &dyn Db, path: &SystemPath, contents: &impl Display) -> anyhow::Result<()> {
+    let system = writable_system(db)?;
     if let Some(parent) = path.parent() {
         system
             .create_directory_all(parent)
@@ -375,7 +445,7 @@ mod tests {
     use crate::ProjectMetadata;
     use crate::db::testing::TestDb;
 
-    use super::write_html_report;
+    use super::{report_path, write_html_report};
 
     fn project() -> anyhow::Result<TestDb> {
         let mut db = TestDb::new(ProjectMetadata::new("test", "/project".into()));
@@ -450,5 +520,81 @@ mod tests {
                 .path_exists(SystemPath::new("/report/index.html"))
         );
         Ok(())
+    }
+
+    #[test]
+    fn links_nested_pages_back_to_the_index() -> anyhow::Result<()> {
+        let mut db = project()?;
+        db.write_file("/project/pkg/sub/nested.py", "z = 1\n")?;
+        let source = CancellationTokenSource::new();
+
+        write_html_report(&db, SystemPath::new("/report"), &source.token())?;
+
+        let index = read(&db, "/report/index.html")?;
+        assert!(index.contains(r#"<a href="files/sub/nested.py.html">sub/nested.py</a>"#));
+        let page = read(&db, "/report/files/sub/nested.py.html")?;
+        assert!(page.contains(r#"<a href="../../index.html">All files</a>"#));
+        Ok(())
+    }
+
+    #[test]
+    fn removes_pages_of_files_that_no_longer_exist() -> anyhow::Result<()> {
+        let mut db = project()?;
+        db.write_file("/report/files/removed.py.html", "")?;
+        db.write_file("/report/files/notes.txt", "")?;
+        let source = CancellationTokenSource::new();
+
+        write_html_report(&db, SystemPath::new("/report"), &source.token())?;
+
+        assert!(
+            !db.system()
+                .path_exists(SystemPath::new("/report/files/removed.py.html"))
+        );
+        assert!(
+            db.system()
+                .path_exists(SystemPath::new("/report/files/precise.py.html"))
+        );
+        // Files that aren't pages are left alone.
+        assert!(
+            db.system()
+                .path_exists(SystemPath::new("/report/files/notes.txt"))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn report_paths_stay_below_the_files_directory() {
+        assert_eq!(
+            report_path(
+                SystemPath::new("/project/pkg/a.py"),
+                SystemPath::new("/project")
+            ),
+            "pkg/a.py"
+        );
+        // A path that isn't below the prefix loses its root rather than becoming absolute.
+        assert_eq!(
+            report_path(
+                SystemPath::new("/elsewhere/a.py"),
+                SystemPath::new("/project")
+            ),
+            "elsewhere/a.py"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn report_paths_use_forward_slashes_and_drive_directories() {
+        assert_eq!(
+            report_path(
+                SystemPath::new(r"C:\project\pkg\a.py"),
+                SystemPath::new(r"C:\project")
+            ),
+            "pkg/a.py"
+        );
+        // Files on different drives have no common parent.
+        assert_eq!(
+            report_path(SystemPath::new(r"D:\other\b.py"), SystemPath::new("")),
+            "D/other/b.py"
+        );
     }
 }

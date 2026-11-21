@@ -77,7 +77,9 @@ struct CoverageVisitor<'db> {
     lines: Vec<Line>,
     /// While visiting the parameters and return annotation of a function, the start of the
     /// function's name. Like mypy, we record the types in a function's signature on the line of its
-    /// `def`, so that a signature counts once even when it spans several lines.
+    /// `def`, so that a signature counts once even when it spans several lines. Also like mypy,
+    /// default values are expressions rather than part of the signature's types, so they are
+    /// recorded on their own lines.
     signature_start: Option<TextSize>,
 }
 
@@ -158,12 +160,20 @@ fn classify<'db>(db: &'db dyn Db, env: &ProgramEnvironment<'db>, ty: Type<'db>) 
     }
 
     // ty infers `CoroutineType[Any, Any, T]` for a call to an `async def` function. Since ty adds
-    // those `Any`s itself, we classify the coroutine by its result type `T`, much as mypy treats
-    // `Any`s it creates for special forms as precise.
+    // those `Any`s itself, we don't count them, much as mypy treats `Any`s it creates for special
+    // forms as precise. Any other yield or send type, such as the `list[Any]` in
+    // `CoroutineType[list[Any], Any, int]`, still counts.
     if let Some(specialization) = ty.known_specialization(db, env, KnownClass::CoroutineType)
-        && let [_, _, result] = specialization.types(db)
+        && let [yield_type, send_type, result] = specialization.types(db)
     {
-        return classify(db, env, *result).min(LineCoverage::Imprecise);
+        return [yield_type, send_type]
+            .into_iter()
+            .filter(|ty| !ty.is_dynamic())
+            .chain([result])
+            .map(|ty| classify(db, env, *ty))
+            .max()
+            .unwrap_or(LineCoverage::Precise)
+            .min(LineCoverage::Imprecise);
     }
 
     // Like mypy, we don't consider a callable imprecise because its signature mentions a dynamic
@@ -243,7 +253,17 @@ impl SourceOrderVisitor<'_> for CoverageVisitor<'_> {
         ) {
             self.record(expr.inferred_type(&self.model), expr.range());
         }
-        source_order::walk_expr(self, expr);
+
+        // A lambda is a function of its own, so the types of its parameters are recorded on the
+        // lambda's lines rather than on the `def` line, even when the lambda is the default value of
+        // a parameter, as in `def f(key=lambda x: x)`.
+        if matches!(expr, ast::Expr::Lambda(_)) {
+            let enclosing_signature = self.signature_start.take();
+            source_order::walk_expr(self, expr);
+            self.signature_start = enclosing_signature;
+        } else {
+            source_order::walk_expr(self, expr);
+        }
     }
 
     /// Records the type that an annotation declares, without visiting the expressions inside it.
@@ -323,6 +343,7 @@ mod tests {
     fn async_protocols_and_aliases() {
         insta::assert_snapshot!(annotated(
             r#"
+            from types import CoroutineType
             from typing import Any, Iterable
 
             async def fetch() -> int:
@@ -331,6 +352,9 @@ mod tests {
             async def main() -> None:
                 coroutine = fetch()
                 result = await coroutine
+
+            def drive(coroutine: CoroutineType[list[Any], Any, int]) -> None:
+                pass
 
             def chunks() -> Iterable[bytes]:
                 return [b""]
@@ -344,6 +368,7 @@ mod tests {
             "#
         ), @r#"
           | 
+        P | from types import CoroutineType
         P | from typing import Any, Iterable
           | 
         P | async def fetch() -> int:
@@ -352,6 +377,9 @@ mod tests {
         P | async def main() -> None:
         P |     coroutine = fetch()
         P |     result = await coroutine
+          | 
+        I | def drive(coroutine: CoroutineType[list[Any], Any, int]) -> None:  # `coroutine`: CoroutineType[list[Any], Any, int], `CoroutineType[list[Any], Any, int]`: CoroutineType[list[Any], Any, int]
+        P |     pass
           | 
         P | def chunks() -> Iterable[bytes]:
         P |     return [b""]
@@ -411,6 +439,8 @@ mod tests {
                 data: dict[str, Any] | None = None,
                 timeout=5.0,
                 default=len("x"),
+                key=lambda item:
+                    item,
             ) -> None:
                 pass
             "#
@@ -418,11 +448,13 @@ mod tests {
           | 
         P | from typing import Any
           | 
-        I | def request(  # `data`: dict[str, Any] | None, `dict[str, Any] | None`: dict[str, Any] | None, `timeout`: Unknown | float*, `default`: Unknown | Literal[1]
+        I | def request(  # `data`: dict[str, Any] | None, `dict[str, Any] | None`: dict[str, Any] | None, `timeout`: Unknown | float*, `default`: Unknown | Literal[1], `key`: Unknown | ((item) -> Unknown)
           |     method: str,
         P |     data: dict[str, Any] | None = None,
         P |     timeout=5.0,
         P |     default=len("x"),
+        D |     key=lambda item:  # `item`: Unknown
+        D |         item,  # `item`: Unknown
           | ) -> None:
         P |     pass
         "#);

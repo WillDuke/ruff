@@ -86,3 +86,23 @@ fn html_report_conflicts_with_fix() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn html_report_conflicts_with_watch() -> anyhow::Result<()> {
+    let case = CliTest::with_file("test.py", "x = 1\n")?;
+
+    assert_cmd_snapshot!(case.command().args(["--html-report", "report", "--watch"]), @"
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: the argument '--html-report <DIR>' cannot be used with '--watch'
+
+    Usage: ty check --html-report <DIR> [PATH]...
+
+    For more information, try '--help'.
+    ");
+
+    Ok(())
+}
